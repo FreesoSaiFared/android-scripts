@@ -1,0 +1,30 @@
+name: TailVNC acquire pinned AVNC source
+
+on:
+  push:
+    branches:
+      - tf-tailvnc-acquisition-20260928
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch exact AVNC source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA=1e209d630d106d1901f6d8bec671da6c41c2f18a
+          mkdir -p out
+          curl -fL --retry 3 "https://codeload.github.com/gujjwal00/avnc/zip/${SHA}" -o "out/avnc-${SHA}.zip"
+          sha256sum "out/avnc-${SHA}.zip" | tee "out/avnc-${SHA}.zip.sha256"
+          unzip -t "out/avnc-${SHA}.zip" | tail -5 | tee "out/unzip-test.txt"
+      - name: Upload acquisition artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: avnc-1e209d630d106d1901f6d8bec671da6c41c2f18a
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
