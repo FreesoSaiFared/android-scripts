@@ -1,0 +1,96 @@
+name: TailVNC acquire Android build SDK
+
+on:
+  push:
+    branches:
+      - tf-tailvnc-sdk-20260928
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install exact public Android build packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          sdkmanager --version
+          sdkmanager \
+            'platform-tools' \
+            'platforms;android-36' \
+            'build-tools;36.0.0' \
+            'ndk;28.2.13676358' \
+            'cmake;3.22.1'
+      - name: Freeze Gradle 9.5.0 and Android SDK subset
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage/sdk/{platforms,build-tools,ndk,cmake} stage/out
+          cp -a "$ANDROID_SDK_ROOT/platform-tools" stage/sdk/
+          cp -a "$ANDROID_SDK_ROOT/platforms/android-36" stage/sdk/platforms/
+          cp -a "$ANDROID_SDK_ROOT/build-tools/36.0.0" stage/sdk/build-tools/
+          cp -a "$ANDROID_SDK_ROOT/ndk/28.2.13676358" stage/sdk/ndk/
+          cp -a "$ANDROID_SDK_ROOT/cmake/3.22.1" stage/sdk/cmake/
+          curl -fL --retry 3 https://services.gradle.org/distributions/gradle-9.5.0-bin.zip -o stage/gradle-9.5.0-bin.zip
+          unzip -q stage/gradle-9.5.0-bin.zip -d stage/
+          rm stage/gradle-9.5.0-bin.zip
+          printf 'platform-tools\nplatforms/android-36\nbuild-tools/36.0.0\nndk/28.2.13676358\ncmake/3.22.1\ngradle-9.5.0\n' > stage/MANIFEST.txt
+          tar -C stage --zstd -cf stage/out/tailvnc-android-build-env.tar.zst sdk gradle-9.5.0 MANIFEST.txt
+          sha256sum stage/out/tailvnc-android-build-env.tar.zst | tee stage/out/SHA256SUMS.txt
+          split -d -a 2 -b 80M stage/out/tailvnc-android-build-env.tar.zst stage/out/part-
+          rm stage/out/tailvnc-android-build-env.tar.zst
+          ls -lh stage/out
+      - name: Upload part 00
+        if: ${{ hashFiles('stage/out/part-00') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-00, path: stage/out/part-00, retention-days: 7 }
+      - name: Upload part 01
+        if: ${{ hashFiles('stage/out/part-01') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-01, path: stage/out/part-01, retention-days: 7 }
+      - name: Upload part 02
+        if: ${{ hashFiles('stage/out/part-02') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-02, path: stage/out/part-02, retention-days: 7 }
+      - name: Upload part 03
+        if: ${{ hashFiles('stage/out/part-03') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-03, path: stage/out/part-03, retention-days: 7 }
+      - name: Upload part 04
+        if: ${{ hashFiles('stage/out/part-04') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-04, path: stage/out/part-04, retention-days: 7 }
+      - name: Upload part 05
+        if: ${{ hashFiles('stage/out/part-05') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-05, path: stage/out/part-05, retention-days: 7 }
+      - name: Upload part 06
+        if: ${{ hashFiles('stage/out/part-06') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-06, path: stage/out/part-06, retention-days: 7 }
+      - name: Upload part 07
+        if: ${{ hashFiles('stage/out/part-07') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-07, path: stage/out/part-07, retention-days: 7 }
+      - name: Upload part 08
+        if: ${{ hashFiles('stage/out/part-08') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-08, path: stage/out/part-08, retention-days: 7 }
+      - name: Upload part 09
+        if: ${{ hashFiles('stage/out/part-09') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-09, path: stage/out/part-09, retention-days: 7 }
+      - name: Upload part 10
+        if: ${{ hashFiles('stage/out/part-10') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-10, path: stage/out/part-10, retention-days: 7 }
+      - name: Upload part 11
+        if: ${{ hashFiles('stage/out/part-11') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-part-11, path: stage/out/part-11, retention-days: 7 }
+      - name: Upload checksum manifest
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-sdk-manifest, path: stage/out/SHA256SUMS.txt, retention-days: 7 }
