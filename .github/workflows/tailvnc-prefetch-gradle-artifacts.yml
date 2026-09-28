@@ -1,0 +1,79 @@
+name: TailVNC prefetch Gradle artifacts
+
+on:
+  push:
+    branches:
+      - tf-tailvnc-gradle-artifacts-20260928
+
+permissions:
+  contents: read
+
+jobs:
+  prefetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Materialize exact AVNC source and native donor trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          AVNC_SHA=1e209d630d106d1901f6d8bec671da6c41c2f18a
+          LIBVNC_SHA=cc4be40b5b5a9327974d1eeb52f445db44abf801
+          VCPKG_SHA=e2bafb1c06518df2e996a2028bdea86f9736d5cb
+          curl -fL --retry 3 "https://codeload.github.com/gujjwal00/avnc/zip/${AVNC_SHA}" -o avnc.zip
+          unzip -q avnc.zip
+          mv "avnc-${AVNC_SHA}" avnc
+          mkdir -p avnc/extern
+          curl -fL --retry 3 "https://codeload.github.com/gujjwal00/libvncserver/zip/${LIBVNC_SHA}" -o libvnc.zip
+          unzip -q libvnc.zip
+          rm -rf avnc/extern/libvncserver
+          mv "libvncserver-${LIBVNC_SHA}" avnc/extern/libvncserver
+          curl -fL --retry 3 "https://codeload.github.com/gujjwal00/vcpkg/zip/${VCPKG_SHA}" -o vcpkg.zip
+          unzip -q vcpkg.zip
+          rm -rf avnc/extern/vcpkg
+          mv "vcpkg-${VCPKG_SHA}" avnc/extern/vcpkg
+      - name: Install exact Android SDK requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_SDK_ROOT" -type f -name sdkmanager -perm -u+x | head -1)"
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
+      - name: Resolve concrete debug and unit-test artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 https://services.gradle.org/distributions/gradle-9.5.0-bin.zip -o gradle.zip
+          unzip -q gradle.zip
+          cd avnc
+          export ANDROID_SDK_ROOT="$ANDROID_SDK_ROOT"
+          export ANDROID_HOME="$ANDROID_SDK_ROOT"
+          ../gradle-9.5.0/bin/gradle --no-daemon --refresh-dependencies :app:testDebugUnitTest
+      - name: Freeze portable Gradle dependency cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/cache
+          cp -a "$HOME/.gradle/caches/modules-2" out/cache/
+          tar -C out -cf out/gradle-cache.tar cache
+          sha256sum out/gradle-cache.tar | tee out/SHA256SUMS.txt
+          split -d -a 2 -b 80M out/gradle-cache.tar out/part-
+          rm out/gradle-cache.tar
+          ls -lh out/part-* out/SHA256SUMS.txt
+      - name: Upload part 00
+        if: ${{ hashFiles('out/part-00') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-gradle-artifacts-part-00, path: out/part-00, retention-days: 7 }
+      - name: Upload part 01
+        if: ${{ hashFiles('out/part-01') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-gradle-artifacts-part-01, path: out/part-01, retention-days: 7 }
+      - name: Upload part 02
+        if: ${{ hashFiles('out/part-02') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-gradle-artifacts-part-02, path: out/part-02, retention-days: 7 }
+      - name: Upload part 03
+        if: ${{ hashFiles('out/part-03') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-gradle-artifacts-part-03, path: out/part-03, retention-days: 7 }
+      - name: Upload manifest
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-gradle-artifacts-manifest, path: out/SHA256SUMS.txt, retention-days: 7 }
