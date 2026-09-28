@@ -1,0 +1,84 @@
+name: TailVNC acquire Android emulator
+
+on:
+  push:
+    branches:
+      - tf-tailvnc-emulator-20260928
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install emulator and API 34 x86_64 system image
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_SDK_ROOT" -type f -name sdkmanager -perm -u+x | head -1)"
+          "$SDKMANAGER" 'emulator' 'system-images;android-34;default;x86_64'
+      - name: Freeze portable emulator subset
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage/sdk/system-images/android-34/default stage/out
+          cp -a "$ANDROID_SDK_ROOT/emulator" stage/sdk/
+          cp -a "$ANDROID_SDK_ROOT/system-images/android-34/default/x86_64" stage/sdk/system-images/android-34/default/
+          printf 'emulator\nsystem-images/android-34/default/x86_64\n' > stage/MANIFEST.txt
+          tar -C stage --zstd -cf stage/out/tailvnc-emulator-api34.tar.zst sdk MANIFEST.txt
+          sha256sum stage/out/tailvnc-emulator-api34.tar.zst | tee stage/out/SHA256SUMS.txt
+          split -d -a 2 -b 80M stage/out/tailvnc-emulator-api34.tar.zst stage/out/part-
+          rm stage/out/tailvnc-emulator-api34.tar.zst
+          ls -lh stage/out
+      - name: Upload part 00
+        if: ${{ hashFiles('stage/out/part-00') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-00, path: stage/out/part-00, retention-days: 7 }
+      - name: Upload part 01
+        if: ${{ hashFiles('stage/out/part-01') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-01, path: stage/out/part-01, retention-days: 7 }
+      - name: Upload part 02
+        if: ${{ hashFiles('stage/out/part-02') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-02, path: stage/out/part-02, retention-days: 7 }
+      - name: Upload part 03
+        if: ${{ hashFiles('stage/out/part-03') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-03, path: stage/out/part-03, retention-days: 7 }
+      - name: Upload part 04
+        if: ${{ hashFiles('stage/out/part-04') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-04, path: stage/out/part-04, retention-days: 7 }
+      - name: Upload part 05
+        if: ${{ hashFiles('stage/out/part-05') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-05, path: stage/out/part-05, retention-days: 7 }
+      - name: Upload part 06
+        if: ${{ hashFiles('stage/out/part-06') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-06, path: stage/out/part-06, retention-days: 7 }
+      - name: Upload part 07
+        if: ${{ hashFiles('stage/out/part-07') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-07, path: stage/out/part-07, retention-days: 7 }
+      - name: Upload part 08
+        if: ${{ hashFiles('stage/out/part-08') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-08, path: stage/out/part-08, retention-days: 7 }
+      - name: Upload part 09
+        if: ${{ hashFiles('stage/out/part-09') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-09, path: stage/out/part-09, retention-days: 7 }
+      - name: Upload part 10
+        if: ${{ hashFiles('stage/out/part-10') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-10, path: stage/out/part-10, retention-days: 7 }
+      - name: Upload part 11
+        if: ${{ hashFiles('stage/out/part-11') != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-part-11, path: stage/out/part-11, retention-days: 7 }
+      - name: Upload manifest
+        uses: actions/upload-artifact@v4
+        with: { name: tailvnc-emulator-manifest, path: stage/out/SHA256SUMS.txt, retention-days: 7 }
